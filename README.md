@@ -1,27 +1,64 @@
 # TuneWise AI 🎵
 
-**TuneWise AI** is a machine learning web application that predicts the music genre of a song based on its audio features.
+TuneWise AI is a machine learning web application that predicts the music genre of a song based on its audio features. It uses a Random Forest classification model and provides an interactive interface built with Streamlit.
 
 ## Features
-- Predict music genres using a machine learning classification model.
-- Explore music audio features through interactive visualizations.
-- View model performance metrics.
+
+- Predict music genres from audio features.
+- Explore audio characteristics through interactive visualizations.
+- View model performance information.
 - Use a simple, interactive Streamlit web interface.
+- Run the application inside a Docker container.
+- Execute automated tests through Jenkins.
 
 ## Technology Stack
-- Python
-- Pandas and NumPy
-- Matplotlib and Seaborn
-- Scikit-learn
-- Streamlit
-- Docker
-- Jenkins
-- Pytest
 
-## Project Type
-Machine Learning — Multi-class Classification
+- **Language:** Python
+- **Data Processing:** Pandas, NumPy
+- **Visualization:** Matplotlib, Seaborn
+- **Machine Learning:** Scikit-learn, Random Forest Classifier
+- **Web Application:** Streamlit
+- **Containerization:** Docker
+- **Continuous Integration:** Jenkins
+- **Testing:** Pytest
+
+## Machine Learning Model
+
+TuneWise AI uses a Random Forest Classifier to predict one of 114 music genres from numerical audio features.
+
+The input features include:
+
+- Danceability
+- Energy
+- Key and mode
+- Loudness
+- Speechiness
+- Acousticness
+- Instrumentalness
+- Liveness
+- Valence
+- Tempo
+- Time signature
+
+### Model Performance
+
+- **Dataset size:** 114,000 tracks
+- **Number of genres:** 114
+- **Model:** Random Forest Classifier
+- **Measured accuracy:** 21.65%
+
+The current model is a baseline. Its performance can be improved through feature engineering, hyperparameter tuning, and further model evaluation.
+
+## Dataset
+
+The project uses a Spotify tracks dataset containing audio features and genre labels, with 114,000 rows and 21 columns.
+
+The dataset is stored locally in `data/dataset.csv` and excluded from Git to avoid uploading a large data file.
+
+Add the original dataset title, publisher, and source URL here before final submission.
 
 ## Project Structure
+
 ```text
 TuneWise-AI/
 ├── data/
@@ -31,28 +68,15 @@ TuneWise-AI/
 ├── screenshots/
 ├── app.py
 ├── requirements.txt
-├── README.md
-└── .gitignore
+├── Dockerfile
+├── Jenkinsfile
+├── .gitignore
+└── README.md
 ```
 
-## How to Run
+## How to Run Locally
 
-1. Clone this repository.
-2. Create and activate a Python virtual environment.
-3. Install the dependencies:
+### 1. Clone the repository
 
 ```bash
-pip install -r requirements.txt
-```
-
-4. Start the Streamlit application:
-
-```bash
-streamlit run app.py
-```
-
-## Dataset
-A Spotify tracks dataset containing audio features and genre labels will be used. The exact dataset source and column names will be documented after the dataset is selected and verified.
-
-## Project Goals
-This project demonstrates a complete beginner-friendly ML workflow, from data preparation and model training to web deployment and DevOps integration.
+git clone
