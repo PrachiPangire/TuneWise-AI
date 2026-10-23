@@ -9,13 +9,15 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo 'TuneWise AI source code is available in the workspace.'
+                echo 'TuneWise AI source code is available.'
             }
         }
 
         stage('Run ML Tests') {
             steps {
-                bat '"E:\\TuneWise-AI\\.venv\\Scripts\\python.exe" -m pytest -v'
+                dir('E:\\TuneWise-AI') {
+                    bat '"E:\\TuneWise-AI\\.venv\\Scripts\\python.exe" -m pytest -v'
+                }
             }
         }
     }
