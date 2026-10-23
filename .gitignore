@@ -1,0 +1,19 @@
+
+# Python virtual environment
+.venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Environment secrets
+.env
+.streamlit/secrets.toml
+
+# Ignore datasets
+data/*.csv
+
+# Ignore trained models
+models/*.pkl
+models/*.joblib
