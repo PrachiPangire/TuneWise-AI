@@ -79,4 +79,105 @@ TuneWise-AI/
 ### 1. Clone the repository
 
 ```bash
-git clone
+git clone https://github.com/PrachiPangire/TuneWise-AI.git
+cd TuneWise-AI
+```
+
+### 2. Create and activate a virtual environment
+
+On Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Start the application
+
+```bash
+streamlit run app.py
+```
+
+Open the local URL displayed in the terminal, usually `http://localhost:8501`.
+
+**Note:** The trained model file must be available at `models/genre_classifier.joblib` for predictions to work.
+
+## Automated Testing
+
+Run the project's automated tests with:
+
+```bash
+python -m pytest -v
+```
+
+The tests check that the saved model exists, predicts a valid genre, and supports multiple predictions.
+
+## Docker
+
+Build the Docker image from the project directory:
+
+```bash
+docker build -t tunewise-ai .
+```
+
+Run the container:
+
+```bash
+docker run -d --name tunewise-container -p 8501:8501 tunewise-ai
+```
+
+Open `http://localhost:8501` in your browser.
+
+If the container already exists, remove it before recreating it:
+
+```bash
+docker rm -f tunewise-container
+```
+
+## Jenkins CI Pipeline
+
+The project includes a `Jenkinsfile` that defines a pipeline to execute the automated ML tests.
+
+The pipeline:
+
+1. Checks out the project from GitHub.
+2. Runs the Pytest test suite.
+3. Reports whether the build succeeded or failed.
+
+A successful Jenkins build confirms that the configured automated tests passed in that run.
+
+## Screenshots
+
+Project screenshots are stored in the `screenshots/` directory.
+
+- Streamlit application running in Docker.
+- Jenkins pipeline showing a successful build.
+- Jenkins console output showing the automated test results.
+
+## Project Goals
+
+This project demonstrates a machine learning workflow combined with web application development, model testing, Docker containerization, and Jenkins-based continuous integration.
+
+## Future Improvements
+
+- Improve classification accuracy.
+- Compare multiple classification algorithms.
+- Add model evaluation visualizations.
+- Improve model packaging and deployment.
+- Automate model training and evaluation.
+
+## Author
+
+**Prachi Pangire**
+
+GitHub: [PrachiPangire](https://github.com/PrachiPangire)
+
+## License
+
+Add an appropriate license if you decide to distribute the project publicly.
