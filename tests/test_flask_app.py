@@ -2,13 +2,57 @@ from __future__ import annotations
 
 import io
 
-from app import app
+import pandas as pd
+import pytest
+
+import app as app_module
+import src.mood_logic as mood_logic
+from src.data_utils import DatasetError
 
 
-client = app.test_client()
+@pytest.fixture()
+def client(monkeypatch):
+    rows = []
+    for index in range(12):
+        rows.append(
+            {
+                "track_id": f"id_{index}",
+                "track_name": f"Song {index}",
+                "artist_name": "Anirudh" if index < 4 else f"Artist {index}",
+                "album_name": f"Album {index}",
+                "year": 2020,
+                "popularity": 50,
+                "language": "Tamil",
+                "artwork_url": "",
+                "track_url": "",
+                "acousticness": 0.2 + (index % 3) * 0.1,
+                "danceability": 0.5 + (index % 4) * 0.1,
+                "duration_ms": 180000,
+                "energy": 0.4 + (index % 5) * 0.1,
+                "instrumentalness": 0.0,
+                "key": index % 12,
+                "liveness": 0.1,
+                "loudness": -8.0,
+                "mode": index % 2,
+                "speechiness": 0.05,
+                "tempo": 90 + index * 3,
+                "time_signature": 4,
+                "valence": 0.3 + (index % 5) * 0.1,
+            }
+        )
+    dataset = pd.DataFrame(rows)
+    monkeypatch.setattr(app_module, "get_clean_dataset", lambda: dataset)
+    monkeypatch.setattr(mood_logic, "get_clean_dataset", lambda: dataset)
+    return app_module.app.test_client()
 
 
-def test_health_endpoint():
+def test_homepage_serves_interface(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert b"TuneWise-AI" in response.data
+
+
+def test_health_endpoint(client):
     response = client.get('/api/health')
     assert response.status_code == 200
     payload = response.get_json()
@@ -16,8 +60,8 @@ def test_health_endpoint():
     assert 'moods' in payload
 
 
-def test_search_endpoint_returns_rows():
-    response = client.get('/api/search?q=Leo&artist=Anirudh')
+def test_search_endpoint_returns_rows(client):
+    response = client.get('/api/search?q=Song&artist=Anirudh')
     assert response.status_code == 200
     payload = response.get_json()
     assert payload['success'] is True
@@ -25,7 +69,13 @@ def test_search_endpoint_returns_rows():
     assert 'results' in payload
 
 
-def test_predict_mood_endpoint():
+def test_search_requires_title_or_artist(client):
+    response = client.get('/api/search')
+    assert response.status_code == 400
+    assert response.get_json()['success'] is False
+
+
+def test_predict_mood_endpoint(client):
     payload = {
         'song': {'track_name': 'Test Song', 'artist_name': 'Demo Artist'},
         'features': {
@@ -50,7 +100,13 @@ def test_predict_mood_endpoint():
     }
 
 
-def test_recommendations_endpoint():
+def test_predict_mood_rejects_missing_features(client):
+    response = client.post('/api/predict-mood', json={'features': {}})
+    assert response.status_code == 400
+    assert 'audio features' in response.get_json()['error']
+
+
+def test_recommendations_endpoint(client):
     response = client.get('/api/recommendations?mood=Happy')
     assert response.status_code == 200
     body = response.get_json()
@@ -60,7 +116,13 @@ def test_recommendations_endpoint():
     assert 'Positive valence' in body['results'][0]['mood_reason']
 
 
-def test_playlist_analysis_endpoint(tmp_path):
+def test_recommendations_reject_invalid_mood(client):
+    response = client.get('/api/recommendations?mood=Unknown')
+    assert response.status_code == 400
+    assert response.get_json()['success'] is False
+
+
+def test_playlist_analysis_endpoint(client):
     csv_rows = "track_name,artist_name,acousticness,danceability,energy,valence,tempo,loudness\nTune 1,Artist 1,0.2,0.78,0.82,0.8,120,-7.0\nTune 2,Artist 2,0.7,0.4,0.3,0.2,86,-12.0\n"
     data = io.BytesIO(csv_rows.encode('utf-8'))
     response = client.post(
@@ -72,3 +134,32 @@ def test_playlist_analysis_endpoint(tmp_path):
     body = response.get_json()
     assert body['eligible_rows'] >= 1
     assert 'csv_download' in body
+
+
+def test_playlist_analysis_requires_file(client):
+    response = client.post('/api/analyze-playlist', data={})
+    assert response.status_code == 400
+    assert 'CSV file' in response.get_json()['error']
+
+
+def test_playlist_analysis_rejects_non_csv(client):
+    response = client.post(
+        '/api/analyze-playlist',
+        data={'file': (io.BytesIO(b'not a csv'), 'playlist.txt')},
+        content_type='multipart/form-data',
+    )
+    assert response.status_code == 400
+    assert 'Only CSV files' in response.get_json()['error']
+
+
+def test_empty_dataset_returns_clear_service_error(monkeypatch):
+    def missing_dataset():
+        raise DatasetError('The Indian songs CSV contains no song rows.')
+
+    monkeypatch.setattr(app_module, 'get_clean_dataset', missing_dataset)
+    response = app_module.app.test_client().get('/api/health')
+    assert response.status_code == 503
+    assert response.get_json() == {
+        'success': False,
+        'error': 'The Indian songs CSV contains no song rows.',
+    }
