@@ -1,19 +1,47 @@
-
 # Python virtual environment
 .venv/
+venv/
 
 # Python cache files
 __pycache__/
 *.py[cod]
+*$py.class
 .ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
 
 # Environment secrets
 .env
+.env.*
+!.env.example
+.flaskenv
 .streamlit/secrets.toml
 
-# Ignore datasets
+# Local datasets are required at runtime but are not distributed with this repository.
 data/*.csv
 
-# Ignore trained models
+# Generated or local model artifacts
 models/*.pkl
 models/*.joblib
+models/*.json
+
+# Temporary uploads and generated build artifacts
+uploads/
+instance/
+build/
+dist/
+*.egg-info/
+
+# Keep folder placeholders if added later
+!data/.gitkeep
+!models/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
