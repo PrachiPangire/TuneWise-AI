@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -5,62 +6,52 @@ pipeline {
         timestamps()
     }
 
-    environment {
-        // Override these in Jenkins if the project lives elsewhere.
-        PROJECT_DIR = 'E:\\TuneWise-AI'
-        VENV_PYTHON = 'E:\\TuneWise-AI\\.venv\\Scripts\\python.exe'
-    }
-
     stages {
-        stage('Workspace check') {
+        stage('Python environment') {
             steps {
-                dir("${env.PROJECT_DIR}") {
-                    echo "Using pre-provisioned TuneWise AI checkout at ${env.PROJECT_DIR}"
-                    bat 'git status --short --branch'
-                }
-            }
-        }
-
-        stage('Environment check') {
-            steps {
-                dir("${env.PROJECT_DIR}") {
-                    bat """
-                        \"${env.VENV_PYTHON}\" --version
-                        \"${env.VENV_PYTHON}\" -c \"import flask, numpy, pandas, pytest, sklearn; print('imports-ok')\"
-                    """
-                }
+                sh 'python3 --version'
+                sh 'python3 -m venv .venv'
+                sh '.venv/bin/python -m pip install --upgrade pip'
+                sh '.venv/bin/python -m pip install -r requirements.txt'
             }
         }
 
         stage('Syntax / import checks') {
             steps {
-                dir("${env.PROJECT_DIR}") {
-                    bat """
-                        \"${env.VENV_PYTHON}\" -m py_compile app.py src\\data_utils.py src\\mood_logic.py src\\prediction.py src\\visualizations.py src\\train_model.py src\\train_popularity_model.py
-                    """
-                }
+                sh '''
+                    .venv/bin/python -m py_compile \
+                        app.py \
+                        src/data_utils.py \
+                        src/mood_logic.py \
+                        src/prediction.py \
+                        src/visualizations.py \
+                        src/train_model.py \
+                        src/train_popularity_model.py
+                '''
             }
         }
 
-        stage('Run pytest') {
+        stage('Tests') {
             steps {
-                dir("${env.PROJECT_DIR}") {
-                    bat "\"${env.VENV_PYTHON}\" -m pytest -v"
-                }
+                sh '.venv/bin/python -m pytest -v'
             }
         }
 
-        stage('Local asset report') {
+        stage('Local data report') {
             steps {
-                dir("${env.PROJECT_DIR}") {
-                    bat """
-                        echo Reporting optional local datasets and model artifacts...
-                        if exist data\\indian_songs.csv (echo FOUND data\\indian_songs.csv) else (echo MISSING data\\indian_songs.csv)
-                        if exist data\\dataset.csv (echo FOUND data\\dataset.csv) else (echo MISSING data\\dataset.csv)
-                        if exist models\\popularity_regressor.joblib (echo FOUND models\\popularity_regressor.joblib) else (echo MISSING models\\popularity_regressor.joblib)
-                        if exist models\\genre_classifier.joblib (echo FOUND models\\genre_classifier.joblib) else (echo MISSING models\\genre_classifier.joblib)
-                    """
-                }
+                sh '''
+                    if [ -f data/indian_songs.csv ]; then
+                        echo "FOUND data/indian_songs.csv"
+                    else
+                        echo "MISSING data/indian_songs.csv"
+                    fi
+
+                    if [ -f data/dataset.csv ]; then
+                        echo "FOUND data/dataset.csv"
+                    else
+                        echo "MISSING data/dataset.csv"
+                    fi
+                '''
             }
         }
     }
@@ -70,7 +61,7 @@ pipeline {
             echo 'TuneWise AI pipeline completed successfully.'
         }
         failure {
-            echo 'TuneWise AI pipeline failed. Inspect the console output. No credentials are printed by this Jenkinsfile.'
+            echo 'TuneWise AI pipeline failed. Inspect the console output.'
         }
     }
 }
