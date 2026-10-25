@@ -39,7 +39,7 @@ function renderSongCard(song) {
 
   const artwork = song.artwork_url
     ? `<img src="${song.artwork_url}" alt="${song.track_name}" style="width:100%; height:110px; object-fit:cover; border-radius:12px; border:1px solid rgba(255,255,255,0.08); margin-bottom:12px;" />`
-    : '<div style="height:110px; border-radius:12px; background:linear-gradient(135deg, rgba(111,110,247,0.18), rgba(0,213,255,0.08)); display:grid; place-items:center; margin-bottom:12px; color:var(--muted);">No artwork</div>';
+    : '<div class="artwork-placeholder" aria-label="No artwork available"><span aria-hidden="true">♪</span><small>No artwork</small></div>';
 
   return `
     <article class="song-card">
