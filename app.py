@@ -1,254 +1,192 @@
+﻿from __future__ import annotations
 
-import streamlit as st
-import pandas as pd
-import joblib
+import io
+from typing import Any
 
-# -------------------------------
-# Page Configuration
-# -------------------------------
-st.set_page_config(
-    page_title="TuneWise AI",
-    page_icon="🎵",
-    layout="wide"
+from flask import Flask, jsonify, render_template, request
+
+from src.mood_logic import (
+    MOOD_LABELS,
+    analyze_playlist_csv,
+    get_clean_dataset,
+    get_recommendations_for_mood,
+    normalize_mood,
+    predict_mood_for_features,
+    search_dataset,
 )
 
-# -------------------------------
-# Custom Styling
-# -------------------------------
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background-color: #0e1117;
-    }
-
-    [data-testid="stSidebar"] {
-        background-color: #161b22;
-    }
-
-    .main-title {
-        font-size: 42px;
-        font-weight: 800;
-        color: #1DB954;
-        margin-bottom: 0;
-    }
-
-    .subtitle {
-        color: #b3b3b3;
-        font-size: 18px;
-    }
-
-    div[data-testid="stMetric"] {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        padding: 18px;
-        border-radius: 12px;
-    }
-
-    div[data-testid="stMetricLabel"] {
-        color: #b3b3b3;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# -------------------------------
-# Load Trained Model
-# -------------------------------
-@st.cache_resource
-def load_model():
-    return joblib.load("models/genre_classifier.joblib")
+app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
+app.config["JSON_SORT_KEYS"] = False
 
 
-saved = load_model()
-model = saved["model"]
-features = saved["features"]
+def error_response(message: str, status_code: int = 400):
+    return jsonify({"success": False, "error": message}), status_code
 
-# -------------------------------
-# Sidebar
-# -------------------------------
-with st.sidebar:
-    st.title("🎵 TuneWise AI")
-    st.write("Your AI-powered music genre explorer.")
 
-    st.divider()
+def _as_feature_map(raw: Any) -> dict[str, float]:
+    if isinstance(raw, dict):
+        cleaned: dict[str, float] = {}
+        for key, value in raw.items():
+            try:
+                cleaned[str(key)] = float(value)
+            except (TypeError, ValueError):
+                continue
+        return cleaned
+    return {}
 
-    st.subheader("📌 About the Project")
-    st.write(
-        "TuneWise AI uses a Random Forest classification "
-        "model to predict a music genre from audio features."
-    )
 
-    st.subheader("💡 How to Use")
-    st.write("1. Adjust the audio feature controls.")
-    st.write("2. Click Predict Genre.")
-    st.write("3. Explore the Top 5 model predictions.")
+@app.get("/")
+def index():
+    return render_template("index.html")
 
-    st.divider()
 
-    st.caption("Built with Python, Scikit-learn and Streamlit.")
-    st.caption("Machine Learning • Music Analysis")
+@app.get("/api/health")
+def health():
+    dataset = get_clean_dataset()
+    return jsonify({
+        "status": "ok",
+        "dataset_rows": int(len(dataset)),
+        "moods": MOOD_LABELS,
+        "app": "TuneWise-AI",
+    })
 
-# -------------------------------
-# Main Header
-# -------------------------------
-st.markdown(
-    '<p class="main-title">🎵 TuneWise AI</p>',
-    unsafe_allow_html=True
-)
 
-st.markdown(
-    '<p class="subtitle">Discover a song’s genre using Machine Learning</p>',
-    unsafe_allow_html=True
-)
+@app.get("/api/search")
+def api_search():
+    query = (request.args.get("q") or "").strip()
+    artist = (request.args.get("artist") or "").strip()
+    if not query and not artist:
+        return error_response("Please provide a song title or artist name.", 400)
 
-st.write(
-    "Enter a song's audio features below to predict its "
-    "most likely music genre."
-)
-
-# -------------------------------
-# Model Information Cards
-# -------------------------------
-st.divider()
-
-metric1, metric2, metric3 = st.columns(3)
-
-with metric1:
-    st.metric("Model Type", "Random Forest")
-
-with metric2:
-    st.metric("Genres Supported", "114")
-
-with metric3:
-    st.metric("Baseline Accuracy", "23.53%")
-
-st.caption(
-    "Accuracy measured on a held-out test dataset. "
-    "Individual predictions may be incorrect."
-)
-
-st.divider()
-
-# -------------------------------
-# Audio Feature Input Form
-# -------------------------------
-with st.form("genre_form"):
-    st.subheader("🎧 Song Audio Features")
-    st.write("Adjust the values to describe the song.")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        danceability = st.slider(
-            "Danceability", 0.0, 1.0, 0.5
-        )
-        energy = st.slider(
-            "Energy", 0.0, 1.0, 0.5
-        )
-        key = st.selectbox(
-            "Key", list(range(12))
-        )
-        loudness = st.slider(
-            "Loudness (dB)", -60.0, 5.0, -8.0
-        )
-
-    with col2:
-        mode = st.selectbox(
-            "Mode", [0, 1]
-        )
-        speechiness = st.slider(
-            "Speechiness", 0.0, 1.0, 0.1
-        )
-        acousticness = st.slider(
-            "Acousticness", 0.0, 1.0, 0.5
-        )
-        instrumentalness = st.slider(
-            "Instrumentalness", 0.0, 1.0, 0.0
-        )
-
-    with col3:
-        liveness = st.slider(
-            "Liveness", 0.0, 1.0, 0.2
-        )
-        valence = st.slider(
-            "Valence", 0.0, 1.0, 0.5
-        )
-        tempo = st.slider(
-            "Tempo (BPM)", 30.0, 250.0, 120.0
-        )
-        time_signature = st.selectbox(
-            "Time Signature", [3, 4, 5, 6, 7]
-        )
-
-    submitted = st.form_submit_button(
-        "🎵 Predict Genre",
-        use_container_width=True
-    )
-
-# -------------------------------
-# Genre Prediction
-# -------------------------------
-if submitted:
-    input_data = pd.DataFrame(
-        [{
-            "danceability": danceability,
-            "energy": energy,
-            "key": key,
-            "loudness": loudness,
-            "mode": mode,
-            "speechiness": speechiness,
-            "acousticness": acousticness,
-            "instrumentalness": instrumentalness,
-            "liveness": liveness,
-            "valence": valence,
-            "tempo": tempo,
-            "time_signature": time_signature,
-        }],
-        columns=features
-    )
-
-    prediction = model.predict(input_data)[0]
-
-    st.divider()
-    st.subheader("🎯 Prediction Result")
-
-    st.success(
-        f"Predicted genre: **{prediction.title()}**"
-    )
-
-    # Display the five highest model scores
-    if hasattr(model, "predict_proba"):
-        probabilities = model.predict_proba(input_data)[0]
-        top_indices = probabilities.argsort()[-5:][::-1]
-
-        top_results = pd.DataFrame({
-            "Genre": model.classes_[top_indices],
-            "Model score": probabilities[top_indices]
+    results = search_dataset(query, artist=artist, limit=12)
+    if not results:
+        return jsonify({
+            "success": True,
+            "results": [],
+            "count": 0,
+            "message": "No matching songs were found in the local dataset. Try another title, artist, or use the playlist analyzer.",
         })
 
-        st.subheader("📊 Top 5 Model Predictions")
+    return jsonify({
+        "success": True,
+        "results": results,
+        "count": len(results),
+    })
 
-        chart_data = top_results.set_index("Genre")
-        st.bar_chart(chart_data)
 
-        st.caption(
-            "Scores are estimates from the model, not guarantees "
-            "that a genre is correct."
-        )
+@app.post("/api/predict-mood")
+def api_predict_mood():
+    payload = request.get_json(silent=True) or {}
+    features = _as_feature_map(payload.get("features", {}))
+    song = payload.get("song") or {}
 
-    st.info(
-        "Tip: Try changing the audio features and predicting again "
-        "to explore how the model responds."
-    )
+    if not features and song:
+        title = song.get("track_name") or song.get("song") or song.get("title")
+        artist = song.get("artist_name") or song.get("artist") or ""
+        match_results = search_dataset(title or "", artist=artist, limit=1)
+        if match_results:
+            features = _as_feature_map(match_results[0].get("audio_features", {}))
 
-# -------------------------------
-# Footer
-# -------------------------------
-st.divider()
+    if not features:
+        return error_response("No valid audio features were supplied for mood prediction.", 400)
 
-st.caption(
-    "TuneWise AI | Machine Learning Mini Project | "
-    "Random Forest Genre Classification"
-)
+    prediction = predict_mood_for_features(features)
+    return jsonify({
+        "success": True,
+        "predicted_mood": prediction["predicted_mood"],
+        "reason": prediction["reason"],
+        "explanation": prediction["explanation"],
+        "scores": prediction["scores"],
+        "feature_summary": {
+            key: round(float(value), 4)
+            for key, value in sorted(features.items())
+            if key in {"acousticness", "danceability", "energy", "valence", "tempo", "loudness"}
+        },
+    })
+
+
+@app.get("/api/recommendations")
+def api_recommendations():
+    mood = normalize_mood(request.args.get("mood") or "")
+    if not mood:
+        return error_response("A valid mood is required. For example: Happy, Sad / Reflective, or Gym Energy.", 400)
+
+    try:
+        results = get_recommendations_for_mood(mood, limit=8)
+    except ValueError as exc:
+        return error_response(str(exc), 400)
+
+    return jsonify({
+        "success": True,
+        "mood": mood,
+        "results": results,
+        "count": len(results),
+    })
+
+
+@app.post("/api/analyze-playlist")
+def api_analyze_playlist():
+    uploaded = request.files.get("file")
+    if uploaded is None:
+        return error_response("Please upload a CSV file.", 400)
+
+    if uploaded.filename and not uploaded.filename.lower().endswith(".csv"):
+        return error_response("Only CSV files are allowed for playlist analysis.", 400)
+
+    if uploaded.content_length and uploaded.content_length > 5 * 1024 * 1024:
+        return error_response("CSV files must be 5 MB or smaller.", 400)
+
+    try:
+        result = analyze_playlist_csv(uploaded)
+    except ValueError as exc:
+        return error_response(str(exc), 400)
+
+    return jsonify({
+        "success": True,
+        "file_name": result["file_name"],
+        "rows": result["rows"],
+        "eligible_rows": result["eligible_rows"],
+        "columns": result["columns"],
+        "preview": result["preview"],
+        "title_column": result["title_column"],
+        "artist_column": result["artist_column"],
+        "mood_distribution": result["mood_distribution"],
+        "results": result["results"],
+        "csv_download": result["csv_download"],
+    })
+
+
+@app.get("/api/model-info")
+def api_model_info():
+    metrics = None
+    try:
+        import json
+        from pathlib import Path
+
+        metrics_path = Path("models/popularity_metrics.json")
+        if metrics_path.exists():
+            metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    except Exception:
+        metrics = None
+
+    return jsonify({
+        "success": True,
+        "method": "This app uses a transparent audio-feature mood scoring system for local songs. The repository does not include a trained mood-classification model, so mood labels are inferred from feature patterns such as energy, valence, danceability, acousticness, tempo, and loudness.",
+        "assumptions": [
+            "The available dataset contains song audio features but no reliable song-level mood labels.",
+            "Mood is estimated from patterns in energy, valence, danceability, acousticness, tempo, and loudness.",
+            "This is explainable audio-feature matching, not a personalized recommendation engine.",
+            "The local dataset is searched directly and not a live Spotify catalogue lookup.",
+        ],
+        "moods": MOOD_LABELS,
+        "metrics": metrics,
+        "notes": [
+            "The original genre classifier and popularity regressor remain in the project for their original purposes.",
+            "Mood labels are intentionally transparent and easy to audit.",
+        ],
+    })
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)

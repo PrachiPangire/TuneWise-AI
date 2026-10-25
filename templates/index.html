@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TuneWise-AI</title>
+    <meta
+      name="description"
+      content="TuneWise-AI discovers the mood behind your music using audio-feature-based audio analysis."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-wrap">
+          <div class="brand-mark" aria-hidden="true">♪</div>
+          <div>
+            <p class="brand-name">TuneWise</p>
+            <p class="brand-tag">Music for the moment</p>
+          </div>
+        </div>
+        <nav class="main-nav" aria-label="Main navigation">
+          <a href="#home">Home</a>
+          <a href="#search">Search a Song</a>
+          <a href="#playlist">Playlist Analyzer</a>
+          <a href="#moods">Explore Moods</a>
+          <a href="#about">About</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero" id="home">
+          <div class="hero-copy">
+            <p class="eyebrow">A better soundtrack for right now</p>
+            <h1>Find music for the moment.</h1>
+            <p class="lead">
+              Search a track, upload a playlist, or explore mood-based recommendations from the
+              songs available in this dataset.
+            </p>
+
+            <div class="cta-row">
+              <a class="primary-cta" href="#search">Search a song</a>
+              <a class="secondary-cta" href="#playlist">Analyze a playlist</a>
+            </div>
+
+            <div class="info-banner">
+              <strong>How it works:</strong>
+              We score songs using actual audio features like energy, valence, tempo, danceability,
+              and acousticness to estimate the mood. This is transparent, dataset-based, and not a
+              personalized Spotify recommendation engine.
+            </div>
+          </div>
+
+          <div class="hero-panel">
+            <div class="mini-card">
+              <span class="mini-label">Dataset</span>
+              <strong id="dataset-count">Loading…</strong>
+              <small>songs available locally</small>
+            </div>
+            <div class="mini-card accent">
+              <span class="mini-label">Mood labels</span>
+              <strong>6 moods</strong>
+              <small>From focus to workout energy</small>
+            </div>
+            <div class="mini-card">
+              <span class="mini-label">Method</span>
+              <strong>Audio-feature matching</strong>
+              <small>Based on the tracks in this collection</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="search">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Search</p>
+              <h2>Search a song</h2>
+            </div>
+          </div>
+
+          <form id="song-search-form" class="search-form">
+            <div class="field-row">
+              <label>
+                <span>Song title</span>
+                <input id="search-title" name="q" type="text" placeholder="Try 'Tum Hi Ho' or 'Kahani'" />
+              </label>
+              <label>
+                <span>Artist</span>
+                <input id="search-artist" name="artist" type="text" placeholder="Optional artist name" />
+              </label>
+            </div>
+            <button type="submit" class="primary-button">Search local dataset</button>
+          </form>
+
+          <div id="search-feedback" class="feedback" aria-live="polite"></div>
+          <div id="search-results" class="result-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="panel" id="playlist">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Playlist</p>
+              <h2>Playlist analyzer</h2>
+            </div>
+          </div>
+
+          <form id="playlist-form" class="upload-form">
+            <label class="upload-zone">
+              <input id="playlist-file" type="file" accept=".csv,text/csv" />
+              <span>Choose a CSV playlist</span>
+            </label>
+            <button type="submit" class="primary-button">Analyze playlist</button>
+          </form>
+
+          <div id="playlist-feedback" class="feedback" aria-live="polite"></div>
+          <div id="playlist-summary" class="summary-box hidden"></div>
+          <div id="playlist-results" class="playlist-grid"></div>
+        </section>
+
+        <section class="panel" id="moods">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Mood match</p>
+              <h2>What are you in the mood for?</h2>
+            </div>
+          </div>
+          <p class="mood-intro">Choose a mood to see tracks that fit.</p>
+
+          <div class="mood-grid">
+            <button class="mood-card" data-mood="Focus / Study" type="button" aria-pressed="false">
+              <strong>Focus / Study</strong>
+            </button>
+            <button class="mood-card" data-mood="Gym Energy" type="button" aria-pressed="false">
+              <strong>Gym Energy</strong>
+            </button>
+            <button class="mood-card" data-mood="Late Night Chill" type="button" aria-pressed="false">
+              <strong>Late Night Chill</strong>
+            </button>
+            <button class="mood-card" data-mood="Happy" type="button" aria-pressed="false">
+              <strong>Happy</strong>
+            </button>
+            <button class="mood-card" data-mood="Sad / Reflective" type="button" aria-pressed="false">
+              <strong>Sad / Reflective</strong>
+            </button>
+            <button class="mood-card" data-mood="Romantic" type="button" aria-pressed="false">
+              <strong>Romantic</strong>
+            </button>
+          </div>
+
+          <div id="mood-results" class="result-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="panel" id="about">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">About</p>
+              <h2>Model information</h2>
+            </div>
+          </div>
+
+          <div id="model-info" class="model-info"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  </body>
+</html>
