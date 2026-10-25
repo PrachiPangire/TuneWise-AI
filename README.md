@@ -68,7 +68,11 @@ The container exposes port `5000` and checks `/api/health`. Docker is installed 
 
 The `Jenkinsfile` expects a Windows agent with a pre-provisioned project checkout and virtual environment. Set `PROJECT_DIR` and `VENV_PYTHON` to their paths in the Jenkinsfile. Its stages check the workspace, verify Python and dependencies, compile the application modules, run pytest, and report local dataset/model assets.
 
-Jenkins was not running in the current environment, so this pipeline and its build result have not been verified here.
+The supplied screenshots show Jenkins build #3 marked successful. The console screenshot shows three passing tests; it does not show the full pipeline output or identify the source revision, so confirm the run used the current `Jenkinsfile` before treating it as current CI verification.
+
+![Jenkins build #3 console output](screenshots/jenkins-build-3-console.png)
+
+![Jenkins build #3 successful status](screenshots/jenkins-build-3-success.png)
 
 ## Testing
 
