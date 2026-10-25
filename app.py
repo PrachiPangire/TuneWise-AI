@@ -5,6 +5,7 @@ from typing import Any
 
 from flask import Flask, jsonify, render_template, request
 
+from src.data_utils import DatasetError
 from src.mood_logic import (
     MOOD_LABELS,
     analyze_playlist_csv,
@@ -22,6 +23,11 @@ app.config["JSON_SORT_KEYS"] = False
 
 def error_response(message: str, status_code: int = 400):
     return jsonify({"success": False, "error": message}), status_code
+
+
+@app.errorhandler(DatasetError)
+def handle_dataset_error(error: DatasetError):
+    return error_response(str(error), 503)
 
 
 def _as_feature_map(raw: Any) -> dict[str, float]:
