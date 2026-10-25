@@ -202,4 +202,4 @@ TuneWise-AI combines local song search, rule-based mood recommendations, and pla
 
 ## 15. Author
 
-Prachi Pangire
+Amruta Pangire
