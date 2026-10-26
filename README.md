@@ -7,7 +7,7 @@ TuneWise-AI is a Flask web app for searching a local music dataset, exploring si
 ## Quick Links
 
 - **GitHub repository:** [PrachiPangire/TuneWise-AI](https://github.com/PrachiPangire/TuneWise-AI)
-- **Local website:** [http://localhost:5000](http://localhost:5000)
+- **Local website:** [https://tunewise-ai.onrender.com/?utm_source=chatgpt.com](https://tunewise-ai.onrender.com/?utm_source=chatgpt.com)
 - **Local health endpoint:** [http://localhost:5000/api/health](http://localhost:5000/api/health)
 - **Commit history:** [View commits on `main`](https://github.com/PrachiPangire/TuneWise-AI/commits/main)
 
