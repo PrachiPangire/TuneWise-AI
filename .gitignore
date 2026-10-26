@@ -23,6 +23,7 @@ htmlcov/
 
 # Local datasets are required at runtime but are not distributed with this repository.
 data/*.csv
+!data/deployment_demo.csv
 
 # Generated or local model artifacts
 models/*.pkl

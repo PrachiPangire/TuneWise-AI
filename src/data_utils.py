@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +13,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 MODELS_DIR = PROJECT_ROOT / "models"
 
-INDIAN_SONGS_PATH = DATA_DIR / "indian_songs.csv"
+_dataset_path = os.environ.get("TUNEWISE_DATASET_PATH")
+if _dataset_path is None:
+    INDIAN_SONGS_PATH = DATA_DIR / "indian_songs.csv"
+else:
+    _dataset_path = Path(_dataset_path)
+    INDIAN_SONGS_PATH = (
+        _dataset_path if _dataset_path.is_absolute() else PROJECT_ROOT / _dataset_path
+    )
 GENRE_DATASET_PATH = DATA_DIR / "dataset.csv"
 POPULARITY_MODEL_PATH = MODELS_DIR / "popularity_regressor.joblib"
 POPULARITY_METRICS_PATH = MODELS_DIR / "popularity_metrics.json"
@@ -89,7 +97,7 @@ class DatasetError(Exception):
 def indian_songs_missing_message() -> str:
     return (
         "The primary dataset was not found at `data/indian_songs.csv`. "
-        "Place the Kaggle Spotify Indian tracks CSV at that path, then reload "
+        "Obtain the dataset separately, place the CSV at that path, then reload "
         "the app or re-run training."
     )
 
@@ -124,6 +132,8 @@ def load_indian_songs(
             "The Indian songs CSV is missing required columns: "
             + ", ".join(missing)
         )
+    if df.empty:
+        raise DatasetError("The Indian songs CSV contains no song rows.")
 
     return df
 
@@ -181,11 +191,10 @@ def clean_indian_songs(df: pd.DataFrame) -> pd.DataFrame:
     modelling_cols = REGRESSION_NUMERIC_FEATURES + [TARGET_COLUMN, LANGUAGE_COLUMN]
     out = out.dropna(subset=modelling_cols)
 
-    # Drop clearly invalid popularity / year values
-    out = out[(out[TARGET_COLUMN] >= 0) & (out[TARGET_COLUMN] <= 100)]
-    out = out[(out["year"] >= 1900) & (out["year"] <= 2100)]
+    for column, (minimum, maximum) in FEATURE_RANGES.items():
+        if column in out.columns:
+            out = out[out[column].between(minimum, maximum)]
 
-    out[TARGET_COLUMN] = out[TARGET_COLUMN].clip(0, 100)
     out["year"] = out["year"].astype(int)
 
     out = out.reset_index(drop=True)
